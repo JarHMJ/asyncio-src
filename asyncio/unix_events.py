@@ -45,6 +45,7 @@ class _UnixSelectorEventLoop(selector_events.BaseSelectorEventLoop):
     """Unix event loop.
 
     Adds signal handling and UNIX Domain Socket support to SelectorEventLoop.
+    向SelectorEventLoop添加信号处理和UNIX域套接字支持
     """
 
     def __init__(self, selector=None):
@@ -1110,7 +1111,7 @@ class _UnixDefaultEventLoopPolicy(events.BaseDefaultEventLoopPolicy):
         the child watcher.
         """
 
-        super().set_event_loop(loop)
+        super().set_event_loop(loop)  # 设置事件循环保存在本地线程中
 
         if (self._watcher is not None and
                 isinstance(threading.current_thread(), threading._MainThread)):

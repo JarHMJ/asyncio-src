@@ -64,7 +64,7 @@ class BaseSelectorEventLoop(base_events.BaseEventLoop):
         logger.debug('Using selector: %s', selector.__class__.__name__)
         self._selector = selector
         self._make_self_pipe()
-        self._transports = weakref.WeakValueDictionary()
+        self._transports = weakref.WeakValueDictionary()   # 创建值弱引用，消除循环引用的副作用
 
     def _make_socket_transport(self, sock, protocol, waiter=None, *,
                                extra=None, server=None):
@@ -110,11 +110,11 @@ class BaseSelectorEventLoop(base_events.BaseEventLoop):
 
     def _make_self_pipe(self):
         # A self-socket, really. :-)
-        self._ssock, self._csock = socket.socketpair()
+        self._ssock, self._csock = socket.socketpair()   # 使用无名套接字通讯
         self._ssock.setblocking(False)
         self._csock.setblocking(False)
         self._internal_fds += 1
-        self._add_reader(self._ssock.fileno(), self._read_from_self)
+        self._add_reader(self._ssock.fileno(), self._read_from_self)  # 注册读数据的事件
 
     def _process_self_data(self, data):
         pass
@@ -256,12 +256,12 @@ class BaseSelectorEventLoop(base_events.BaseEventLoop):
                     f'{transport!r}')
 
     def _add_reader(self, fd, callback, *args):
-        self._check_closed()
-        handle = events.Handle(callback, args, self, None)
+        self._check_closed()  # 检查loop是否关闭，关闭报错
+        handle = events.Handle(callback, args, self, None)  # 注册回调方法返回的对象
         try:
-            key = self._selector.get_key(fd)
+            key = self._selector.get_key(fd)   # 获取已注册文件对象关联的selector_key
         except KeyError:
-            self._selector.register(fd, selectors.EVENT_READ,
+            self._selector.register(fd, selectors.EVENT_READ,   # 注册读事件到selector
                                     (handle, None))
         else:
             mask, (reader, writer) = key.events, key.data

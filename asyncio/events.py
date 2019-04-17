@@ -39,10 +39,10 @@ class Handle:
     def __init__(self, callback, args, loop, context=None):
         if context is None:
             context = contextvars.copy_context()
-        self._context = context
+        self._context = context    # 运行的上下文
         self._loop = loop
-        self._callback = callback
-        self._args = args
+        self._callback = callback   # 回调函数
+        self._args = args      # 参数
         self._cancelled = False
         self._repr = None
         if self._loop.get_debug():
@@ -85,7 +85,7 @@ class Handle:
 
     def _run(self):
         try:
-            self._context.run(self._callback, *self._args)
+            self._context.run(self._callback, *self._args)   # 在之前的上下文环境中执行回调函数
         except Exception as exc:
             cb = format_helpers._format_callback_source(
                 self._callback, self._args)
@@ -97,7 +97,7 @@ class Handle:
             }
             if self._source_traceback:
                 context['source_traceback'] = self._source_traceback
-            self._loop.call_exception_handler(context)
+            self._loop.call_exception_handler(context)     # 处理错误
         self = None  # Needed to break cycles when an exception occurs.
 
 
@@ -208,7 +208,9 @@ class AbstractServer:
 
 
 class AbstractEventLoop:
-    """Abstract event loop."""
+    """Abstract event loop.
+        事件循环的抽象类
+    """
 
     # Running and stopping the event loop.
 
@@ -218,8 +220,10 @@ class AbstractEventLoop:
 
     def run_until_complete(self, future):
         """Run the event loop until a Future is done.
+         运行事件循环，直到Future完成。
 
         Return the Future's result, or raise its exception.
+        返回Future的结果，或者提出异常。
         """
         raise NotImplementedError
 
@@ -674,12 +678,14 @@ _lock = threading.Lock()
 class _RunningLoop(threading.local):
     loop_pid = (None, None)
 
-
+# 使用本地线程保存运行的各个线程的事件循环
 _running_loop = _RunningLoop()
 
 
 def get_running_loop():
     """Return the running event loop.  Raise a RuntimeError if there is none.
+
+    获取当前的事件循环，没有抛出错误。
 
     This function is thread-specific.
     """
@@ -713,6 +719,9 @@ def _set_running_loop(loop):
 
 
 def _init_event_loop_policy():
+    """
+    初始化事件循环策略
+    """
     global _event_loop_policy
     with _lock:
         if _event_loop_policy is None:  # pragma: no branch
@@ -721,7 +730,9 @@ def _init_event_loop_policy():
 
 
 def get_event_loop_policy():
-    """Get the current event loop policy."""
+    """Get the current event loop policy.
+        返回当前循环的策略
+    """
     if _event_loop_policy is None:
         _init_event_loop_policy()
     return _event_loop_policy

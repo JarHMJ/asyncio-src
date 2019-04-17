@@ -572,8 +572,10 @@ async def sleep(delay, result=None, *, loop=None):
 
 def ensure_future(coro_or_future, *, loop=None):
     """Wrap a coroutine or an awaitable in a future.
+        在将来包装一个协程或等待。
 
     If the argument is a Future, it is returned directly.
+    如果参数是Future，则直接返回。
     """
     if coroutines.iscoroutine(coro_or_future):
         if loop is None:

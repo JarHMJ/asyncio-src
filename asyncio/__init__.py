@@ -35,6 +35,8 @@ __all__ = (base_events.__all__ +
            tasks.__all__ +
            transports.__all__)
 
+
+# 根据平台选择导入的事件循环
 if sys.platform == 'win32':  # pragma: no cover
     from .windows_events import *
     __all__ += windows_events.__all__

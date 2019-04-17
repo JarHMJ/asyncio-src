@@ -345,6 +345,9 @@ class Server(events.AbstractServer):
 
 
 class BaseEventLoop(events.AbstractEventLoop):
+    """
+        事件循环的基类
+    """
 
     def __init__(self):
         self._timer_cancelled_count = 0
@@ -370,7 +373,7 @@ class BaseEventLoop(events.AbstractEventLoop):
 
         # A weak set of all asynchronous generators that are
         # being iterated by the loop.
-        self._asyncgens = weakref.WeakSet()
+        self._asyncgens = weakref.WeakSet()  # 由循环迭代的所有异步生成器的弱集。
         # Set to True when `loop.shutdown_asyncgens` is called.
         self._asyncgens_shutdown_called = False
 
@@ -519,11 +522,11 @@ class BaseEventLoop(events.AbstractEventLoop):
         self._set_coroutine_origin_tracking(self._debug)
         self._thread_id = threading.get_ident()
 
-        old_agen_hooks = sys.get_asyncgen_hooks()
+        old_agen_hooks = sys.get_asyncgen_hooks()  # asynchronous generators hooks (firstiter, finalizer)
         sys.set_asyncgen_hooks(firstiter=self._asyncgen_firstiter_hook,
                                finalizer=self._asyncgen_finalizer_hook)
         try:
-            events._set_running_loop(self)
+            events._set_running_loop(self)   # 设置自己为事件循环
             while True:
                 self._run_once()
                 if self._stopping:
@@ -537,25 +540,31 @@ class BaseEventLoop(events.AbstractEventLoop):
 
     def run_until_complete(self, future):
         """Run until the Future is done.
+        运行直到Future完成。
 
         If the argument is a coroutine, it is wrapped in a Task.
+        如果参数是协程，则它包含在Task中。
 
         WARNING: It would be disastrous to call run_until_complete()
         with the same coroutine twice -- it would wrap it in two
         different Tasks and that can't be good.
+        警告：调用run_until_complete（）会是灾难性的
+        使用相同的协程两次 - 它将它包装成两个
+        不同的任务，这不可能是好的。
 
         Return the Future's result, or raise its exception.
+        返回Future的结果，或者提出异常。
         """
         self._check_closed()
 
-        new_task = not futures.isfuture(future)
-        future = tasks.ensure_future(future, loop=self)
+        new_task = not futures.isfuture(future)   # 检查是否是为future对象
+        future = tasks.ensure_future(future, loop=self)   # 包装成future对象
         if new_task:
             # An exception is raised if the future didn't complete, so there
             # is no need to log the "destroy pending task" message
             future._log_destroy_pending = False
 
-        future.add_done_callback(_run_until_complete_cb)
+        future.add_done_callback(_run_until_complete_cb)   # 给future对象添加一个完成后的回调函数 停止future的loop
         try:
             self.run_forever()
         except:
@@ -666,19 +675,25 @@ class BaseEventLoop(events.AbstractEventLoop):
 
     def call_soon(self, callback, *args, context=None):
         """Arrange for a callback to be called as soon as possible.
+        安排尽快调用回调。
 
         This operates as a FIFO queue: callbacks are called in the
         order in which they are registered.  Each callback will be
         called exactly once.
+        它作为FIFO队列运行：在回调中调用回调
+        他们注册的顺序。每个回调都是
+        只调用一次。
 
         Any positional arguments after the callback will be passed to
         the callback when it is called.
+        回调后的任何位置参数都将传递给
+        调用它时的回调。
         """
         self._check_closed()
         if self._debug:
             self._check_thread()
-            self._check_callback(callback, 'call_soon')
-        handle = self._call_soon(callback, args, context)
+            self._check_callback(callback, 'call_soon')  # 检测callback是否
+        handle = self._call_soon(callback, args, context)   # 添加到ready队列中
         if handle._source_traceback:
             del handle._source_traceback[-1]
         return handle
@@ -702,12 +717,17 @@ class BaseEventLoop(events.AbstractEventLoop):
 
     def _check_thread(self):
         """Check that the current thread is the thread running the event loop.
+        检查当前线程是否是运行事件循环的线程。
 
         Non-thread-safe methods of this class make this assumption and will
         likely behave incorrectly when the assumption is violated.
+        这个类的非线程安全方法做出了这个假设并且会
+        当违反假设时，可能表现不正确。
 
         Should only be called when (self._debug == True).  The caller is
         responsible for checking this condition for performance reasons.
+        只应在（self._debug == True）时调用。来电者是
+        由于性能原因负责检查此条件。
         """
         if self._thread_id is None:
             return
@@ -1667,10 +1687,14 @@ class BaseEventLoop(events.AbstractEventLoop):
 
     def _run_once(self):
         """Run one full iteration of the event loop.
+                运行事件循环的一次完整迭代。
 
         This calls all currently ready callbacks, polls for I/O,
         schedules the resulting callbacks, and finally schedules
         'call_later' callbacks.
+        这会调用所有当前准备好的回调，I / O轮询，
+        安排最终的回调，最后安排
+        'call_later'回调。
         """
 
         sched_count = len(self._scheduled)
@@ -1678,7 +1702,7 @@ class BaseEventLoop(events.AbstractEventLoop):
             self._timer_cancelled_count / sched_count >
                 _MIN_CANCELLED_TIMER_HANDLES_FRACTION):
             # Remove delayed calls that were cancelled if their number
-            # is too high
+            # is too high   如果数量过高，请删除已取消的延迟呼叫
             new_scheduled = []
             for handle in self._scheduled:
                 if handle._cancelled:
@@ -1686,11 +1710,11 @@ class BaseEventLoop(events.AbstractEventLoop):
                 else:
                     new_scheduled.append(handle)
 
-            heapq.heapify(new_scheduled)
+            heapq.heapify(new_scheduled)    # 使用堆排序
             self._scheduled = new_scheduled
             self._timer_cancelled_count = 0
         else:
-            # Remove delayed calls that were cancelled from head of queue.
+            # Remove delayed calls that were cancelled from head of queue. 删除从队列头部取消的延迟呼叫
             while self._scheduled and self._scheduled[0]._cancelled:
                 self._timer_cancelled_count -= 1
                 handle = heapq.heappop(self._scheduled)
@@ -1700,13 +1724,13 @@ class BaseEventLoop(events.AbstractEventLoop):
         if self._ready or self._stopping:
             timeout = 0
         elif self._scheduled:
-            # Compute the desired timeout.
+            # Compute the desired timeout.  计算所需的超时
             when = self._scheduled[0]._when
             timeout = min(max(0, when - self.time()), MAXIMUM_SELECT_TIMEOUT)
 
         if self._debug and timeout != 0:
             t0 = self.time()
-            event_list = self._selector.select(timeout)
+            event_list = self._selector.select(timeout)   # 获取select事件，设定超时
             dt = self.time() - t0
             if dt >= 1.0:
                 level = logging.INFO
@@ -1744,6 +1768,10 @@ class BaseEventLoop(events.AbstractEventLoop):
         # callbacks scheduled by callbacks run this time around --
         # they will be run the next time (after another I/O poll).
         # Use an idiom that is thread-safe without using locks.
+        # 这是回调被实际*调用*的唯一地方。所有其他地方只是添加它们准备好了。
+        #  注意：我们运行所有当前预定的回调，但不是任何回调这次由回调计划的回调运行 -
+        #   他们将在下次运行（在另一次I / O轮询之后）。
+        #   使用不使用锁的线程安全的习惯用法。
         ntodo = len(self._ready)
         for i in range(ntodo):
             handle = self._ready.popleft()

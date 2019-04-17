@@ -195,16 +195,21 @@ class Future:
 
     def add_done_callback(self, fn, *, context=None):
         """Add a callback to be run when the future becomes done.
+         添加一个回调，以便在将来完成时运行。
 
         The callback is called with a single argument - the future object. If
         the future is already done when this is called, the callback is
         scheduled with call_soon.
+
+        使用单个参数（未来对象）调用回调。如果
+        当调用它时，未来已经完成，回调是
+        使用call_soon安排。
         """
         if self._state != _PENDING:
             self._loop.call_soon(fn, self, context=context)
         else:
             if context is None:
-                context = contextvars.copy_context()
+                context = contextvars.copy_context()  # 拷贝当前上下文
             self._callbacks.append((fn, context))
 
     # New method not in PEP 3148.
