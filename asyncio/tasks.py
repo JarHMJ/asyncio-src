@@ -113,8 +113,8 @@ class Task(futures._PyFuture):  # Inherit Python Task implementation
         self._coro = coro
         self._context = contextvars.copy_context()
 
-        self._loop.call_soon(self.__step, context=self._context)
-        _register_task(self)
+        self._loop.call_soon(self.__step, context=self._context)  # 把__step包裹成handle对象添加到_ready队列中
+        _register_task(self)  # 注册任务
 
     def __del__(self):
         if self._state == futures._PENDING and self._log_destroy_pending:

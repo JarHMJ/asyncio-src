@@ -693,7 +693,7 @@ class BaseEventLoop(events.AbstractEventLoop):
         if self._debug:
             self._check_thread()
             self._check_callback(callback, 'call_soon')  # 检测callback是否
-        handle = self._call_soon(callback, args, context)   # 添加到ready队列中
+        handle = self._call_soon(callback, args, context)   # 添加到_ready队列中
         if handle._source_traceback:
             del handle._source_traceback[-1]
         return handle

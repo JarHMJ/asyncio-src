@@ -13,5 +13,15 @@ asyncio源码解析
     3. `loop.run_until_complete(main)` 运行事件循环，直到Future完成
     
 2. `loop.run_until_complete()`里面执行的是`run_forever()`。
+    1. `run_forever()`中设置了_running_loop,然后一直调用`_run_once()`这个方法，
+    可以说这个方法是任务的核心调度,配合select/epoll等系统调用完成事件循环。
+    2. `_run_once()`这个方法的逻辑是先把整理`_scheduled`的要执行的和`selcet`中就绪的事件
+    添加到`_ready`队列中去，然后遍历`_ready`队列（ `collections.deque()`）,对列中的任务其实一个`handle`
+    对象，执行`handle._run()`会去调用 `Task._step()`方法, `_step()`实际调用的是`coro.send(None)`。
+    3. `coro.send(None)`是协程中的概念，它会接着上次`yeild`的地方继续执行下去。
+    
+    
+    
+    
 
 # ...
